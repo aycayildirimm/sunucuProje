@@ -40,3 +40,9 @@ GET	/api/appointments	Mevcut tüm randevuları listeler.
 
 DELETE/api/appointments/:idBelirli bir randevu kaydını siler (Tarih kontrolü yapılır).
 
+ER Diyagramı
+<img width="1403" height="805" alt="Ekran görüntüsü 2026-01-17 153256" src="https://github.com/user-attachments/assets/d1f02475-ce3e-42a1-8cd6-12e370d48b6a" />
+
+
+
+
