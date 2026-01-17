@@ -1,56 +1,28 @@
-# Online Randevu ve Hizmet Yönetim Sistemi RESTful API
+PROJE AÇIKLAMASI
+Bu çalışma, bir işletmenin sunduğu hizmetlerin ve bu hizmetlere yönelik müşteri randevularının dijital ortamda yönetilmesi amacıyla geliştirilmiş RESTful bir API projesidir. Uygulama, Node.js ve Express.js teknolojileri kullanılarak inşa edilmiştir. Yazılım mimarisi olarak Model-View-Controller (MVC) prensipleri benimsenmiş; veritabanı iletişimi, iş mantığı ve yönlendirme işlemleri birbirinden modüler olarak ayrılmıştır. Veri saklama katmanında MySQL ilişkisel veritabanı yönetim sistemi tercih edilmiştir.
 
-Bu proje, Node.js ve MySQL kullanılarak geliştirilmiş, ölçeklenebilir ve modüler bir Online Randevu ve Hizmet Yönetim Sistemi API'sıdır. Proje, endüstri standardı olan **MVC (Model-View-Controller)** mimarisini temel alır ve iş mantığını ayrıştırmak için **MSC (Model-Service-Controller)** katmanlı yapısını kullanır.
+SENARYO TANIMI VE İŞ KURALLARI
+Sistem üzerinde veri tutarlılığını sağlamak ve hatalı işlemleri engellemek amacıyla aşağıdaki iş kuralları (business logic) sunucu tarafında kodlanmıştır:
 
-## 🚀 Mimari Yapı
+Geçmiş Tarih Kısıtlaması: Kullanıcılar randevu oluştururken veya mevcut bir randevuyu silmek istediklerinde sistem tarih kontrolü yapar. Güncel tarihten daha eski bir zamana randevu alınması veya geçmiş randevuların silinmesi engellenerek veri güvenliği sağlanır.
 
-Proje, sorumlulukların ayrılığı (SoC) prensibine uygun olarak katmanlara ayrılmıştır:
+Aktif Hizmet Kontrolü: Randevu oluşturma sürecinde, seçilen hizmetin sistemdeki durumu kontrol edilir. Yalnızca "is_active" değeri 1 (aktif) olan hizmetler için randevu kabul edilir; pasif durumdaki hizmetlere randevu girişi sistem tarafından reddedilir.
 
-*   **Models**: Veritabanı sorgularını (SQL) yönetir ve veri erişim katmanıdır.
-*   **Services**: Tüm iş kurallarını (Business Logic) barındırır.
-*   **Controllers**: HTTP isteklerini karşılar, Service katmanını çağırır ve yanıt döner.
-*   **Routes**: URL yönlendirmelerini controller fonksiyonlarına bağlar.
+KURULUM ADIMLARI
+Projenin yerel sunucuda çalıştırılabilmesi için aşağıdaki teknik adımların sırasıyla uygulanması gerekmektedir:
 
-## ⚙️ Özellikler ve İş Kuralları
+Repository Klonlama: Proje dosyaları git clone https://github.com/aycayildirimm/sunucuProje.git komutu ile yerel bilgisayara indirilir.
 
-Bu API, sadece veri kaydetmenin ötesinde, veri bütünlüğünü ve iş akışını koruyan kritik kontrollere sahiptir:
+Bağımlılıkların Yüklenmesi: Terminal üzerinden proje dizinine gidilerek npm install komutu çalıştırılır ve gerekli kütüphaneler yüklenir.
 
-1.  **Pasif Hizmet Kontrolü**:
-    *   Kullanıcılar randevu oluştururken seçtikleri hizmetin aktif olup olmadığı kontrol edilir.
-    *   Veritabanında durumu `pasif` (0) olan bir hizmet için randevu alınamaz. API hata mesajı döndürür.
+Veritabanı Yapılandırması: sunucu_proje.sql dosyası MySQL sunucusuna aktarılır. .env.example dosyasının bir kopyası .env adıyla oluşturularak veritabanı bağlantı bilgileri (host, user, password, database) bu dosyaya girilir.
 
-2.  **Geçmiş Randevu Koruması**:
-    *   Geçmiş tarihli randevuların silinmesi veya güncellenmesi engellenmiştir.
-    *   Bu sayede tarihsel veri bütünlüğü korunur.
+Uygulamanın Başlatılması: Sunucu node app.js komutu ile aktif hale getirilir.
 
-3.  **Güvenilir Port Yönetimi**:
-    *   Sunucu başlatılırken port çakışmalarını otomatik algılar ve müsait olan bir sonraki portu kullanır.
+4. API ENDPOINT LİSTESİ
+GET	/api/users	Kayıtlı tüm kullanıcı bilgilerini döndürür.
+GET	/api/services	Sunulan tüm hizmetlerin listesini getirir.
+POST	/api/appointments	Yeni bir randevu kaydı oluşturur (İş kuralları denetimlidir).
+GET	/api/appointments	Mevcut tüm randevuları listeler.
+DELETE/api/appointments/:idBelirli bir randevu kaydını siler (Tarih kontrolü yapılır).
 
-## 🛠️ Teknolojiler
-
-*   **Node.js**: Runtime environment.
-*   **Express.js**: Web server framework.
-*   **MySQL2**: Veritabanı sürücüsü (Connection Pool yapısı ile).
-*   **Dotenv**: Ortam değişkenleri yönetimi.
-
-## 📦 Kurulum
-
-1.  Projeyi indirin:
-    ```bash
-    git clone <repo-url>
-    ```
-2.  Bağımlılıkları yükleyin:
-    ```bash
-    npm install
-    ```
-3.  `.env` dosyasını yapılandırın (Veritabanı bilgileri).
-4.  Sunucuyu başlatın:
-    ```bash
-    npm start
-    ```
-
-## 🧪 API Endpoints
-
-*   **Users**: `/api/users` (GET, POST, PUT, DELETE)
-*   **Services**: `/api/services` (GET, POST, PUT, DELETE)
-*   **Appointments**: `/api/appointments` (GET, POST, PUT, DELETE)
