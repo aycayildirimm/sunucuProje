@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Randevu Al - Online Sistem</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-primary { background-color: #0d6efd; border: none; }
+        .btn-primary:hover { background-color: #0b5ed7; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h2 class="text-center mb-4">Randevu Al</h2>
+                    
+                    <div id="alertBox" class="alert d-none" role="alert"></div>
+
+                    <form id="appointmentForm">
+                        <!-- Name Field -->
+                        <div class="mb-3">
+                            <label for="userName" class="form-label">Adınız Soyadınız</label>
+                            <input type="text" class="form-control" id="userName" placeholder="Adınızı giriniz" required>
+                            <div class="form-text">Sistemde kaydınız yoksa otomatik oluşturulacaktır.</div>
+                        </div>
+
+                        <!-- Service Selection -->
+                        <div class="mb-3">
+                            <label for="serviceSelect" class="form-label">Hizmet Seçin</label>
+                            <select class="form-select" id="serviceSelect" required>
+                                <option value="" selected disabled>Yükleniyor...</option>
+                            </select>
+                        </div>
+
+                        <!-- Date Selection -->
+                        <div class="mb-3">
+                            <label for="appointmentDate" class="form-label">Randevu Tarihi</label>
+                            <input type="datetime-local" class="form-control" id="appointmentDate" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">Randevu Oluştur</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        // Load services on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch(`${API_URL}/services`);
+                const services = await response.json();
+                const serviceSelect = document.getElementById('serviceSelect');
+                
+                serviceSelect.innerHTML = '<option value="" selected disabled>Hizmet Seçiniz...</option>';
+                services.forEach(service => {
+                    const price = service.price ? `${service.price} TL` : '';
+                    const duration = service.duration ? `${service.duration} dk` : '';
+                    // Mark inactive services but show them (or filter them out)
+                    const statusText = service.is_active ? '' : ' (Pasif)';
+                    const disabledAttr = service.is_active ? '' : 'disabled';
+                    
+                    const option = document.createElement('option');
+                    option.value = service.id;
+                    option.text = `${service.name} - ${price} ${statusText}`;
+                    if(!service.is_active) option.disabled = true;
+                    
+                    serviceSelect.appendChild(option);
+                });
+            } catch (error) {
+                showAlert('Hizmetler yüklenirken hata oluştu.', 'danger');
+            }
+        });
+
+        // Handle Form Submission
+        document.getElementById('appointmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('userName').value;
+            const serviceId = document.getElementById('serviceSelect').value;
+            const date = document.getElementById('appointmentDate').value;
+            const alertBox = document.getElementById('alertBox');
+
+            // Reset alert
+            alertBox.classList.add('d-none');
+            alertBox.classList.remove('alert-success', 'alert-danger');
+
+            try {
+                // 1. Get or Create User
+                // Ideally this should be a robust search, but for demo:
+                // We'll Create User (backend should handle duplicates or we handle it here?)
+                // API for 'create user' creates new user. If duplicate email -> error?
+                // Let's assume unique email. But here we only have Name.
+                // To keep it simple as per prompt "field where customer writes name":
+                // We will create a dummy email based on name to satisfy DB constraint if any
+                const email = name.toLowerCase().replace(/\s+/g, '.') + '@example.com';
+                
+                // Try create user
+                let userId;
+                try {
+                    const userRes = await fetch(`${API_URL}/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email })
+                    });
+                    const userData = await userRes.json();
+                    
+                    if (userRes.ok) {
+                        userId = userData.id;
+                    } else {
+                        // If failed (maybe email exists), try to find user?
+                        // Or just assume id exists if we had a proper search.
+                        // For this demo, let's just proceed or assume duplicate email error returns existin user?
+                        // Actually, let's GET all users and find logic to be safe for DEMO.
+                        const allUsersRes = await fetch(`${API_URL}/users`);
+                        const allUsers = await allUsersRes.json();
+                        const found = allUsers.find(u => u.name.toLowerCase() === name.toLowerCase());
+                        if (found) {
+                            userId = found.id;
+                        } else {
+                            throw new Error('Kullanıcı oluşturulamadı: ' + (userData.error || 'Bilinmeyen hata'));
+                        }
+                    }
+                } catch (err) {
+                     // Fallback, maybe user exists
+                     console.log(err);
+                }
+
+                if (!userId) {
+                    throw new Error('Kullanıcı işlemi başarısız. Lütfen tekrar deneyin.');
+                }
+
+                // 2. Create Appointment
+                // Formatting date to ISO string for API compatibility if needed, 
+                // but datetime-local value is usually "YYYY-MM-DDTHH:mm" which is ISO-like.
+                // Our backend handles conversion.
+                
+                const appointmentRes = await fetch(`${API_URL}/appointments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        service_id: serviceId,
+                        appointment_date: date
+                    })
+                });
+
+                const result = await appointmentRes.json();
+
+                if (appointmentRes.ok) {
+                    showAlert('Randevunuz başarıyla oluşturuldu! ID: ' + result.id, 'success');
+                    document.getElementById('appointmentForm').reset();
+                } else {
+                    throw new Error(result.error || result.message || 'Randevu oluşturulamadı.');
+                }
+
+            } catch (error) {
+                showAlert(error.message, 'danger');
+            }
+        });
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.textContent = message;
+            alertBox.className = `alert alert-${type}`;
+            alertBox.classList.remove('d-none');
+        }
+    </script>
+</body>
+</html>
